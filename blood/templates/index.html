@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BloodConnect — Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #080c14;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  /* Subtle grid bg */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(239,68,68,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(239,68,68,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    z-index: 0;
+  }
+
+  .hero {
+    position: relative; z-index: 1;
+    text-align: center;
+    max-width: 700px;
+    width: 100%;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+
+  .logo-icon {
+    width: 52px; height: 52px;
+    background: #dc2626;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 0 24px rgba(220,38,38,0.6);
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    background: linear-gradient(135deg, #fff 30%, #fca5a5 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .sub {
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.5px;
+    margin-bottom: 48px;
+    line-height: 1.6;
+  }
+
+  /* Nav cards */
+  .nav-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 36px;
+  }
+  @media (max-width: 540px) { .nav-grid { grid-template-columns: 1fr; } }
+
+  .nav-card {
+    background: #111827;
+    border: 1px solid #1f2937;
+    padding: 30px 20px;
+    border-radius: 18px;
+    text-decoration: none;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .nav-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(220,38,38,0.08) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .nav-card:hover::before { opacity: 1; }
+  .nav-card:hover {
+    transform: translateY(-8px);
+    border-color: #ef4444;
+    box-shadow: 0 12px 32px rgba(239,68,68,0.2);
+  }
+
+  .nav-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    background: #1f2937;
+    transition: background 0.3s;
+  }
+  .nav-card:hover .nav-icon { background: rgba(239,68,68,0.15); }
+
+  .nav-label { font-size: 13px; opacity: 0.9; }
+  .nav-desc { font-size: 11px; color: rgba(255,255,255,0.35); font-weight: 400; text-align: center; line-height: 1.4; }
+
+  /* Live stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 0;
+    border: 1px solid #1f2937;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #111827;
+  }
+  .stat-item {
+    flex: 1;
+    padding: 18px 12px;
+    text-align: center;
+    border-right: 1px solid #1f2937;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num { font-size: 22px; font-weight: 900; color: #ef4444; display: block; }
+  .stat-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="logo-row">
+    <div class="logo-icon">🩸</div>
+    <h1>BloodConnect</h1>
+  </div>
+  <p class="sub">Real-time Emergency Blood Radar System — connecting patients with donors in seconds.</p>
+
+  <div class="nav-grid">
+    <a href="/donor_page" class="nav-card">
+      <div class="nav-icon">🙋‍♂️</div>
+      <span class="nav-label">Donor Portal</span>
+      <span class="nav-desc">Register as a donor and help save lives</span>
+    </a>
+    <a href="/receiver_page" class="nav-card">
+      <div class="nav-icon">🏥</div>
+      <span class="nav-label">Request Blood</span>
+      <span class="nav-desc">Broadcast an emergency to all matching donors</span>
+    </a>
+    <a href="/map_page" class="nav-card">
+      <div class="nav-icon">📡</div>
+      <span class="nav-label">Live Radar</span>
+      <span class="nav-desc">Map active donors by blood type and city</span>
+    </a>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-num" id="s-donors">—</span>
+      <div class="stat-label">Active Donors</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">8</span>
+      <div class="stat-label">Blood Types</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">&lt;60s</span>
+      <div class="stat-label">Alert Speed</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">🔴</span>
+      <div class="stat-label">System Live</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  fetch('/api/all_donors')
+    .then(r => r.json())
+    .then(d => { document.getElementById('s-donors').textContent = d.length; })
+    .catch(() => { document.getElementById('s-donors').textContent = '0'; });
+</script>
+</body>
+</html>

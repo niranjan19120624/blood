@@ -1,0 +1,44 @@
+# render.yaml — Render deployment blueprint
+# Commit this file to the ROOT of your GitHub repository.
+# Render auto-detects it and configures the service for you.
+
+services:
+  - type: web
+    name: bloodconnect
+    runtime: python
+    region: singapore          # closest Render region to India
+    plan: free                 # change to 'starter' for persistent disk support
+
+    # ── Build ──────────────────────────────────────────────────────────────
+    buildCommand: pip install -r requirements.txt
+
+    # ── Start ──────────────────────────────────────────────────────────────
+    # gunicorn binds to the PORT env var that Render injects automatically.
+    # 'app:app' means: from app.py, use the Flask object named 'app'.
+    # Workers = 2×CPU + 1; on Render free (0.1 CPU) 2 workers is safe.
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+
+    # ── Health check ───────────────────────────────────────────────────────
+    healthCheckPath: /health
+
+    # ── Environment variables ──────────────────────────────────────────────
+    # Values marked 'sync: false' must be filled in the Render Dashboard.
+    # Go to: Dashboard → bloodconnect → Environment → Add environment variable
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+      - key: TWILIO_ACCOUNT_SID
+        sync: false            # paste your real value in Render dashboard
+
+      - key: TWILIO_AUTH_TOKEN
+        sync: false            # paste your real value in Render dashboard
+
+      - key: TWILIO_PHONE_NUMBER
+        sync: false            # e.g. +12015551234 (your Twilio number)
+
+      # DB_PATH — leave commented out on the free plan (uses /tmp).
+      # Uncomment and set to your disk mount path if you upgrade to a paid plan
+      # and attach a Render Disk (e.g. mount path /data → DB_PATH=/data/database.db).
+      # - key: DB_PATH
+      #   value: /data/database.db

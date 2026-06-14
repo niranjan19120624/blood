@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Donor Radar — BloodConnect</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { margin: 0; background: #080c14; font-family: 'Inter', sans-serif; overflow: hidden; }
+
+  /* ── Map ── */
+  #map { height: 100vh; width: 100vw; z-index: 1; }
+
+  /* ── Control Panel ── */
+  .panel {
+    position: absolute; top: 20px; left: 20px; z-index: 1000;
+    background: rgba(8, 12, 20, 0.92);
+    border: 1px solid #1e293b;
+    backdrop-filter: blur(12px);
+    padding: 22px;
+    border-radius: 18px;
+    width: 280px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+    color: white;
+  }
+
+  .panel-logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #1e293b;
+  }
+  .panel-logo-icon {
+    width: 36px; height: 36px;
+    background: #dc2626;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 14px rgba(220,38,38,0.45);
+    flex-shrink: 0;
+  }
+  .panel-logo h3 { font-size: 15px; font-weight: 700; }
+  .panel-logo p  { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+
+  label.field-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+
+  /* Blood group selector */
+  .blood-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    margin-bottom: 14px;
+  }
+  .b-opt {
+    padding: 8px 4px;
+    border-radius: 7px;
+    border: 1px solid #1e293b;
+    background: #0f172a;
+    color: rgba(255,255,255,0.45);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+  }
+  .b-opt:hover   { border-color: #ef4444; color: white; }
+  .b-opt.sel {
+    background: #dc2626; border-color: #dc2626;
+    color: white; box-shadow: 0 0 8px rgba(220,38,38,0.4);
+  }
+
+  input.city-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1px solid #1e293b;
+    background: #0a0f1a;
+    color: white;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input.city-input::placeholder { color: rgba(255,255,255,0.2); }
+  input.city-input:focus { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.12); }
+
+  .scan-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: white;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    transition: all 0.25s;
+    box-shadow: 0 4px 12px rgba(220,38,38,0.3);
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .scan-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(220,38,38,0.5);
+  }
+  .scan-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .all-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    border: 1px solid #1e293b;
+    border-radius: 9px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .all-btn:hover { border-color: #334155; color: rgba(255,255,255,0.7); }
+
+  /* Result count badge */
+  #countBadge {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 9px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    display: none;
+  }
+  #countBadge.has-results { color: #4ade80; border-color: rgba(74,222,128,0.2); background: rgba(74,222,128,0.05); }
+  #countBadge.no-results  { color: #fca5a5; border-color: rgba(252,165,165,0.2); background: rgba(252,165,165,0.05); }
+
+  /* Divider + back link */
+  .panel-footer {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #1e293b;
+  }
+  .back-link { color: rgba(255,255,255,0.3); text-decoration: none; font-size: 11px; transition: color 0.2s; }
+  .back-link:hover { color: rgba(255,255,255,0.7); }
+
+  /* ── Custom Leaflet Marker ── */
+  .donor-pin {
+    width: 12px; height: 12px;
+    background: #3b82f6;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.3), 0 0 12px rgba(59,130,246,0.6);
+  }
+  .donor-pin.urgent {
+    background: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.3), 0 0 14px rgba(239,68,68,0.7);
+  }
+
+  /* Leaflet popup override */
+  .leaflet-popup-content-wrapper {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+    color: white;
+  }
+  .leaflet-popup-tip { background: #0f172a; }
+  .leaflet-popup-content { margin: 14px 16px; font-family: 'Inter', sans-serif; }
+
+  .popup-name  { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .popup-blood {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(220,38,38,0.15);
+    border: 1px solid rgba(220,38,38,0.3);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fca5a5;
+    margin-bottom: 10px;
+  }
+  .popup-row { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+  .popup-row strong { color: rgba(255,255,255,0.8); }
+
+  .call-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(22,163,74,0.3);
+  }
+  .call-btn:hover { box-shadow: 0 6px 18px rgba(22,163,74,0.5); transform: translateY(-1px); }
+
+  /* Pulse ring animation on marker */
+  @keyframes pulseRing {
+    0%   { transform: scale(1);   opacity: 0.8; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+  .ping {
+    position: absolute;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #3b82f6;
+    opacity: 0;
+    animation: pulseRing 1.8s ease-out infinite;
+  }
+  .pin-wrap { position: relative; width: 14px; height: 14px; }
+</style>
+</head>
+<body>
+
+<!-- Control Panel -->
+<div class="panel">
+  <div class="panel-logo">
+    <div class="panel-logo-icon">📡</div>
+    <div>
+      <h3>Live Donor Radar</h3>
+      <p>Real-time geolocation map</p>
+    </div>
+  </div>
+
+  <label class="field-label">Blood Group</label>
+  <div class="blood-mini-grid" id="bloodGrid">
+    <button class="b-opt" data-val="A+">A+</button>
+    <button class="b-opt" data-val="A-">A−</button>
+    <button class="b-opt" data-val="B+">B+</button>
+    <button class="b-opt" data-val="B-">B−</button>
+    <button class="b-opt" data-val="O+">O+</button>
+    <button class="b-opt" data-val="O-">O−</button>
+    <button class="b-opt" data-val="AB+">AB+</button>
+    <button class="b-opt" data-val="AB-">AB−</button>
+  </div>
+
+  <label class="field-label">Filter by City (optional)</label>
+  <input class="city-input" id="cityFilter" placeholder="e.g. Chennai">
+
+  <button class="scan-btn" id="scanBtn" onclick="scanRadar()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    Scan for Donors
+  </button>
+
+  <button class="all-btn" onclick="loadAll()">Show all donors on map</button>
+
+  <div id="countBadge"></div>
+
+  <div class="panel-footer">
+    <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // ── Map init ──
+  const map = L.map('map', { zoomControl: false }).setView([20.5937, 78.9629], 5);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © Carto',
+    maxZoom: 18
+  }).addTo(map);
+
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+  let donorLayer = L.layerGroup().addTo(map);
+
+  // ── Blood group picker ──
+  let selectedBlood = '';
+  document.getElementById('bloodGrid').querySelectorAll('.b-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.b-opt').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      selectedBlood = btn.dataset.val;
+    });
+  });
+
+  // ── Build a custom marker HTML ──
+  function makeIcon(blood) {
+    const rare = ['O-','AB-','B-','A-'].includes(blood);
+    const cls  = rare ? 'donor-pin urgent' : 'donor-pin';
+    return L.divIcon({
+      className: '',
+      html: `<div class="pin-wrap"><div class="ping" style="background:${rare?'#ef4444':'#3b82f6'}"></div><div class="${cls}"></div></div>`,
+      iconSize:   [14, 14],
+      iconAnchor: [7, 7],
+      popupAnchor:[0, -12]
+    });
+  }
+
+  // ── Render donors on map ──
+  function renderDonors(donors) {
+    donorLayer.clearLayers();
+    const badge = document.getElementById('countBadge');
+
+    if (!donors || donors.length === 0) {
+      badge.style.display = 'block';
+      badge.className = 'no-results';
+      badge.textContent = 'No donors found for this search.';
+      return;
+    }
+
+    badge.style.display = 'block';
+    badge.className = 'has-results';
+    badge.textContent = `✅ ${donors.length} donor${donors.length !== 1 ? 's' : ''} found`;
+
+    const latLngs = [];
+
+    donors.forEach(donor => {
+      // Skip donors with missing or clearly invalid coordinates
+      if (!donor.lat || !donor.lon) return;
+
+      const ll = [donor.lat, donor.lon];
+      latLngs.push(ll);
+
+      const phone = donor.phone || '';
+      const marker = L.marker(ll, { icon: makeIcon(donor.blood) });
+
+      marker.bindPopup(`
+        <div class="popup-name">${escHtml(donor.name)}</div>
+        <div class="popup-blood">${escHtml(donor.blood)}</div>
+        <div class="popup-row">📍 <strong>${escHtml(donor.city || 'Unknown city')}</strong></div>
+        ${phone ? `<div class="popup-row">📞 <strong>${escHtml(phone)}</strong></div>` : ''}
+        ${phone ? `<a class="call-btn" href="tel:${escHtml(phone)}">📞 Call Donor Now</a>` : ''}
+      `, { maxWidth: 220 });
+
+      donorLayer.addLayer(marker);
+    });
+
+    // Fit map to show all pins
+    if (latLngs.length === 1) {
+      map.flyTo(latLngs[0], 13, { animate: true, duration: 1 });
+    } else if (latLngs.length > 1) {
+      map.flyToBounds(L.latLngBounds(latLngs).pad(0.25), { animate: true, duration: 1.2 });
+    }
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ── Scan (by blood ± city) ──
+  async function scanRadar() {
+    if (!selectedBlood) {
+      alert('Please select a blood group first.');
+      return;
+    }
+    const btn  = document.getElementById('scanBtn');
+    const city = document.getElementById('cityFilter').value.trim();
+    btn.disabled = true;
+    btn.textContent = 'Scanning…';
+
+    try {
+      let url = `/api/get_donors?blood=${encodeURIComponent(selectedBlood)}`;
+      if (city) url += `&city=${encodeURIComponent(city)}`;
+
+      const res    = await fetch(url);
+      const donors = await res.json();
+      renderDonors(donors);
+    } catch (e) {
+      console.error(e);
+      alert('Radar scan failed. Is the server running?');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Scan for Donors`;
+    }
+  }
+
+  // ── Show all donors ──
+  async function loadAll() {
+    document.getElementById('countBadge').style.display = 'none';
+    try {
+      const res    = await fetch('/api/all_donors');
+      const donors = await res.json();
+      renderDonors(donors);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // Auto-load all donors on page open
+  loadAll();
+</script>
+</body>
+</html>

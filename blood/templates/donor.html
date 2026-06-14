@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donor Registration — BloodConnect</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #080c14;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(220,38,38,0.08) 0%, transparent 60%);
+    z-index: 0;
+  }
+
+  .card {
+    position: relative; z-index: 1;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    padding: 44px 40px;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(239,68,68,0.08);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .card-icon {
+    width: 46px; height: 46px;
+    background: #dc2626;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 20px rgba(220,38,38,0.4);
+    flex-shrink: 0;
+  }
+  .card-header h2 { font-size: 20px; font-weight: 700; }
+  .card-header p  { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 3px; }
+
+  /* Field groups */
+  .field { margin-bottom: 14px; }
+  label { display: block; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.45); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 7px; }
+
+  input, select {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid #1e293b;
+    background: #080c14;
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  input::placeholder { color: rgba(255,255,255,0.2); }
+  input:focus, select:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+  }
+  select option { background: #0f172a; }
+
+  /* Location row */
+  .loc-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .loc-row input { flex: 1; }
+  #locBtn {
+    padding: 0 14px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #locBtn:hover { background: #334155; border-color: #ef4444; }
+  #locBtn.loading { opacity: 0.6; cursor: not-allowed; }
+
+  /* Location status badge */
+  #locStatus {
+    font-size: 11px;
+    margin-top: 6px;
+    height: 16px;
+    transition: color 0.3s;
+  }
+  #locStatus.ok  { color: #22c55e; }
+  #locStatus.err { color: #ef4444; }
+  #locStatus.inf { color: rgba(255,255,255,0.35); }
+
+  /* Blood group select */
+  .blood-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .blood-opt {
+    padding: 11px 6px;
+    border-radius: 8px;
+    border: 1px solid #1e293b;
+    background: #080c14;
+    color: rgba(255,255,255,0.5);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .blood-opt:hover   { border-color: #ef4444; color: white; }
+  .blood-opt.selected {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: white;
+    box-shadow: 0 0 12px rgba(220,38,38,0.35);
+  }
+
+  /* Submit */
+  .btn {
+    width: 100%;
+    padding: 16px;
+    margin-top: 24px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: white;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 16px rgba(220,38,38,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+  }
+  .btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 8px 28px rgba(220,38,38,0.5);
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+  .back-link { display: block; text-align: center; margin-top: 20px; color: rgba(255,255,255,0.3); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+  .back-link:hover { color: rgba(255,255,255,0.7); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #16a34a; color: white; padding: 14px 28px; border-radius: 50px;
+    font-size: 14px; font-weight: 600; z-index: 999;
+    transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.4s;
+    opacity: 0; white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(22,163,74,0.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.error { background: #dc2626; box-shadow: 0 8px 24px rgba(220,38,38,0.4); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-icon">🙋‍♂️</div>
+    <div>
+      <h2>Donor Registration</h2>
+      <p>Join the life-saving network</p>
+    </div>
+  </div>
+
+  <!-- Name -->
+  <div class="field">
+    <label>Full Name</label>
+    <input id="name" placeholder="e.g. Arun Kumar" autocomplete="name">
+  </div>
+
+  <!-- Phone -->
+  <div class="field">
+    <label>Phone Number</label>
+    <input id="phone" type="tel" placeholder="+91 98765 43210" autocomplete="tel">
+  </div>
+
+  <!-- Blood Group -->
+  <div class="field">
+    <label>Blood Group</label>
+    <div class="blood-grid" id="bloodGrid">
+      <button class="blood-opt" data-val="A+">A+</button>
+      <button class="blood-opt" data-val="A-">A−</button>
+      <button class="blood-opt" data-val="B+">B+</button>
+      <button class="blood-opt" data-val="B-">B−</button>
+      <button class="blood-opt" data-val="O+">O+</button>
+      <button class="blood-opt" data-val="O-">O−</button>
+      <button class="blood-opt" data-val="AB+">AB+</button>
+      <button class="blood-opt" data-val="AB-">AB−</button>
+    </div>
+    <input type="hidden" id="blood">
+  </div>
+
+  <!-- Location -->
+  <div class="field">
+    <label>City / Location</label>
+    <div class="loc-row">
+      <input id="city" placeholder="Your city name" autocomplete="address-level2">
+      <button id="locBtn" onclick="getLocation()" title="Use my current location">
+        📍 Detect
+      </button>
+    </div>
+    <div id="locStatus" class="inf">Location helps donors appear accurately on the map.</div>
+  </div>
+
+  <button class="btn" id="submitBtn" onclick="submitForm()">Register as Donor</button>
+  <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Hidden coords storage -->
+<input type="hidden" id="lat">
+<input type="hidden" id="lon">
+
+<script>
+  // ── Blood group picker ──
+  let selectedBlood = '';
+  document.getElementById('bloodGrid').querySelectorAll('.blood-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.blood-opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedBlood = btn.dataset.val;
+      document.getElementById('blood').value = selectedBlood;
+    });
+  });
+
+  // ── Geolocation ──
+  async function getLocation() {
+    const btn    = document.getElementById('locBtn');
+    const status = document.getElementById('locStatus');
+
+    if (!navigator.geolocation) {
+      showStatus('Geolocation not supported by this browser.', 'err');
+      return;
+    }
+
+    btn.classList.add('loading');
+    btn.textContent = '⏳ Locating…';
+    showStatus('Requesting GPS signal…', 'inf');
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        document.getElementById('lat').value = lat;
+        document.getElementById('lon').value = lon;
+
+        // Reverse geocode via OpenStreetMap Nominatim (free, no API key)
+        try {
+          const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
+            headers: { 'Accept-Language': 'en' }
+          });
+          const json = await res.json();
+          const addr = json.address;
+          // Pick best city field
+          const city = addr.city || addr.town || addr.village || addr.county || addr.state_district || '';
+          document.getElementById('city').value = city;
+          showStatus(`📍 Location captured — ${city || 'coordinates saved'}`, 'ok');
+        } catch (e) {
+          // Even if reverse geocode fails, we have the coords
+          showStatus(`📍 GPS coordinates saved (${lat.toFixed(4)}, ${lon.toFixed(4)})`, 'ok');
+        }
+
+        btn.classList.remove('loading');
+        btn.innerHTML = '✅ Located';
+      },
+      (err) => {
+        btn.classList.remove('loading');
+        btn.innerHTML = '📍 Detect';
+        const msgs = {
+          1: 'Location permission denied. Please allow access and try again.',
+          2: 'Location unavailable. Check your device settings.',
+          3: 'Location request timed out. Try again.'
+        };
+        showStatus(msgs[err.code] || 'Could not get location.', 'err');
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('locStatus');
+    el.textContent = msg;
+    el.className = type;
+  }
+
+  // ── Form submission ──
+  async function submitForm() {
+    const name  = document.getElementById('name').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const city  = document.getElementById('city').value.trim();
+    const lat   = document.getElementById('lat').value;
+    const lon   = document.getElementById('lon').value;
+
+    if (!name)          return showToast('Please enter your name.', true);
+    if (!phone)         return showToast('Please enter your phone number.', true);
+    if (!selectedBlood) return showToast('Please select your blood group.', true);
+    if (!city)          return showToast('Please enter or detect your city.', true);
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Registering…';
+
+    const payload = { name, phone, blood: selectedBlood, city };
+    if (lat && lon) { payload.lat = parseFloat(lat); payload.lon = parseFloat(lon); }
+
+    try {
+      const res = await fetch('/api/register_donor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        showToast('🎉 Registration successful! Thank you for joining.', false);
+        // Reset form after short delay
+        setTimeout(() => {
+          document.getElementById('name').value  = '';
+          document.getElementById('phone').value = '';
+          document.getElementById('city').value  = '';
+          document.getElementById('lat').value   = '';
+          document.getElementById('lon').value   = '';
+          document.querySelectorAll('.blood-opt').forEach(b => b.classList.remove('selected'));
+          selectedBlood = '';
+          document.getElementById('locStatus').textContent = 'Location helps donors appear accurately on the map.';
+          document.getElementById('locStatus').className   = 'inf';
+          document.getElementById('locBtn').innerHTML = '📍 Detect';
+          btn.disabled = false;
+          btn.textContent = 'Register as Donor';
+        }, 1800);
+      } else {
+        throw new Error('Server error');
+      }
+    } catch (e) {
+      showToast('Something went wrong. Please try again.', true);
+      btn.disabled = false;
+      btn.textContent = 'Register as Donor';
+    }
+  }
+
+  function showToast(msg, isError = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast' + (isError ? ' error' : '');
+    // Force reflow
+    void el.offsetWidth;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3200);
+  }
+</script>
+</body>
+</html>

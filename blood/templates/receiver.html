@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request Blood — BloodConnect</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #080c14;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 80% 50%, rgba(220,38,38,0.07) 0%, transparent 60%);
+    z-index: 0;
+  }
+
+  .card {
+    position: relative; z-index: 1;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    padding: 44px 40px;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .card-icon {
+    width: 46px; height: 46px;
+    background: #dc2626;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 20px rgba(220,38,38,0.4);
+    flex-shrink: 0;
+  }
+  .card-header h2 { font-size: 20px; font-weight: 700; }
+
+  .warning-band {
+    background: rgba(220,38,38,0.08);
+    border: 1px solid rgba(220,38,38,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 26px;
+    line-height: 1.5;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .warning-band span { color: #ef4444; font-weight: 700; }
+
+  .field { margin-bottom: 14px; }
+  label  { display: block; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 7px; }
+
+  input {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid #1e293b;
+    background: #080c14;
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input::placeholder { color: rgba(255,255,255,0.2); }
+  input:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+  }
+
+  /* Blood group picker (same as donor.html) */
+  .blood-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .blood-opt {
+    padding: 11px 6px;
+    border-radius: 8px;
+    border: 1px solid #1e293b;
+    background: #080c14;
+    color: rgba(255,255,255,0.5);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .blood-opt:hover   { border-color: #ef4444; color: white; }
+  .blood-opt.selected {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: white;
+    box-shadow: 0 0 12px rgba(220,38,38,0.35);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    margin-top: 24px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: white;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(220,38,38,0.3);
+    position: relative; overflow: hidden;
+  }
+  .btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+  }
+  .btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 8px 28px rgba(220,38,38,0.5);
+  }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .back-link { display: block; text-align: center; margin-top: 20px; color: rgba(255,255,255,0.3); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+  .back-link:hover { color: rgba(255,255,255,0.7); }
+
+  /* Result box */
+  #result {
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    display: none;
+  }
+  #result.success { background: rgba(22,163,74,0.12); border: 1px solid rgba(22,163,74,0.3); color: #4ade80; }
+  #result.error   { background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); color: #fca5a5; }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #16a34a; color: white; padding: 14px 28px; border-radius: 50px;
+    font-size: 14px; font-weight: 600; z-index: 999;
+    transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), opacity 0.4s;
+    opacity: 0; white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(22,163,74,0.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.error { background: #dc2626; box-shadow: 0 8px 24px rgba(220,38,38,0.4); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-icon">🏥</div>
+    <div>
+      <h2>Emergency Blood Request</h2>
+    </div>
+  </div>
+
+  <div class="warning-band">
+    <span>⚡</span>
+    <div>Submitting this form will instantly SMS all matching donors in the system.</div>
+  </div>
+
+  <div class="field">
+    <label>Patient Name</label>
+    <input id="patient" placeholder="e.g. Ravi Shankar">
+  </div>
+
+  <div class="field">
+    <label>Blood Group Needed</label>
+    <div class="blood-grid" id="bloodGrid">
+      <button class="blood-opt" data-val="A+">A+</button>
+      <button class="blood-opt" data-val="A-">A−</button>
+      <button class="blood-opt" data-val="B+">B+</button>
+      <button class="blood-opt" data-val="B-">B−</button>
+      <button class="blood-opt" data-val="O+">O+</button>
+      <button class="blood-opt" data-val="O-">O−</button>
+      <button class="blood-opt" data-val="AB+">AB+</button>
+      <button class="blood-opt" data-val="AB-">AB−</button>
+    </div>
+    <input type="hidden" id="blood">
+  </div>
+
+  <div class="field">
+    <label>Hospital Name</label>
+    <input id="hospital" placeholder="e.g. Apollo Hospital, Chennai">
+  </div>
+
+  <div class="field">
+    <label>Emergency Contact Number</label>
+    <input id="phone" type="tel" placeholder="+91 98765 43210">
+  </div>
+
+  <div class="field">
+    <label>City</label>
+    <input id="city" placeholder="e.g. Chennai">
+  </div>
+
+  <button class="btn" id="submitBtn" onclick="sendRequest()">🚨 Broadcast Emergency</button>
+
+  <div id="result"></div>
+  <a href="/dashboard" class="back-link">← Return to Dashboard</a>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let selectedBlood = '';
+
+  document.getElementById('bloodGrid').querySelectorAll('.blood-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.blood-opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedBlood = btn.dataset.val;
+      document.getElementById('blood').value = selectedBlood;
+    });
+  });
+
+  async function sendRequest() {
+    const patient  = document.getElementById('patient').value.trim();
+    const hospital = document.getElementById('hospital').value.trim();
+    const phone    = document.getElementById('phone').value.trim();
+    const city     = document.getElementById('city').value.trim();
+
+    if (!patient)       return showToast('Enter the patient name.', true);
+    if (!selectedBlood) return showToast('Select the required blood group.', true);
+    if (!hospital)      return showToast('Enter the hospital name.', true);
+    if (!phone)         return showToast('Enter an emergency contact number.', true);
+    if (!city)          return showToast('Enter the city.', true);
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Broadcasting…';
+
+    try {
+      const res = await fetch('/api/request_blood', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient, blood: selectedBlood, hospital, phone, city })
+      });
+
+      const json = await res.json();
+      if (res.ok) {
+        const count = json.donors_notified ?? 0;
+        const resultEl = document.getElementById('result');
+        resultEl.style.display = 'block';
+        resultEl.className = 'success';
+        resultEl.innerHTML = `✅ Emergency broadcast sent! You can see a donor in the Radar Map! <br><strong>${count} donor${count !== 1 ? 's' : ''}</strong> notified via SMS.`;
+        showToast(`SMS sent to ${count} donor${count !== 1 ? 's' : ''}!`);
+
+        // Reset after 3s
+        setTimeout(() => {
+          ['patient','hospital','phone','city'].forEach(id => document.getElementById(id).value = '');
+          document.querySelectorAll('.blood-opt').forEach(b => b.classList.remove('selected'));
+          selectedBlood = '';
+          btn.disabled = false;
+          btn.textContent = '🚨 Broadcast Emergency';
+          resultEl.style.display = 'none';
+        }, 3500);
+      } else {
+        throw new Error('Server error');
+      }
+    } catch (e) {
+      showToast('Something went wrong. Please try again.', true);
+      btn.disabled = false;
+      btn.textContent = '🚨 Broadcast Emergency';
+    }
+  }
+
+  function showToast(msg, isError = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast' + (isError ? ' error' : '');
+    void el.offsetWidth;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3200);
+  }
+</script>
+</body>
+</html>
